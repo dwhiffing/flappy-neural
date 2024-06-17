@@ -1,5 +1,5 @@
-import { GRAVITY, JUMP_VELOCITY } from '../constants'
-import { NeuralNetwork } from '../lib/nn'
+import { CONFIG } from '../constants'
+import { NeuralNetwork } from '../lib/neuralNetwork'
 import { Game } from '../scenes/Game'
 import { Pipe } from './Pipe'
 
@@ -20,7 +20,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.score = 0
     this.setActive(true)
       .setVisible(true)
-      .setGravityY(GRAVITY)
+      .setGravityY(CONFIG.gravity)
       .setVelocity(0)
       .setPosition(
         this.scene.cameras.main.width * 0.1,
@@ -29,10 +29,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   jump = () => {
-    this.setVelocityY(JUMP_VELOCITY)
+    this.setVelocityY(CONFIG.jumpHeight)
   }
 
-  die = () => {
+  kill = () => {
     this.setActive(false)
       .setVisible(false)
       .setGravityY(0)
@@ -47,6 +47,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       .slice(0, 2)
 
     if (closest.length < 2 || !this.active) return
+
+    if (this.y > this.scene.cameras.main.height * 1.2 || this.y < -50) {
+      this.kill()
+    }
 
     this.score++
 

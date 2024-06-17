@@ -1,11 +1,5 @@
 import { Scene } from 'phaser'
-import {
-  PIPE_DELAY,
-  PIPE_SPEED,
-  PLAYER_COUNT,
-  MUTATION_RATE,
-  PIPE_DISTANCE,
-} from '../constants'
+import { CONFIG } from '../constants'
 import { Player } from '../sprites/Player'
 import { Pipe } from '../sprites/Pipe'
 import * as dat from 'dat.gui'
@@ -15,7 +9,12 @@ export class Game extends Scene {
   pipes: Phaser.GameObjects.Group
   spawnEvent: Phaser.Time.TimerEvent
   generationCount: number
+  currentScore: number
+  bestScore: number
   generationText: Phaser.GameObjects.Text
+  currentScoreText: Phaser.GameObjects.Text
+  bestScoreText: Phaser.GameObjects.Text
+  gui: dat.GUI
 
   constructor() {
     super('Game')
@@ -23,44 +22,92 @@ export class Game extends Scene {
 
   preload() {
     this.load.setPath('assets')
-
     this.load.image('player', 'player.png')
     this.load.image('pipe', 'pipe.png')
     this.load.image('background', 'bg.png')
   }
 
   create() {
-    const gui = new dat.GUI({ width: 400 })
-
-    gui.add(this.time, 'timeScale', 1, 15, 1).onChange((c) => {
-      this.physics.world.timeScale = 1 / c
-      this.time.timeScale = c
-    })
-
     const w = this.cameras.main.width
     const h = this.cameras.main.height
 
-    this.add.image(w / 2, h / 2, 'background')
+    this.add
+      .image(w / 2, h / 2, 'background')
+      .setFlipY(true)
+      .setScale(1, 4)
+
     this.players = this.add.group({
       classType: Player,
-      maxSize: PLAYER_COUNT,
+      maxSize: 1000,
       runChildUpdate: true,
     })
-
-    this.generationCount = 0
-
     this.pipes = this.add.group({ classType: Pipe, maxSize: 50 })
 
-    this.generationText = this.add
-      .text(this.cameras.main.width - 5, 20, 'Generation 0')
-      .setDepth(999)
-      .setOrigin(1, 0.5)
-
+    this.reset()
+    this.setupUI()
     this.nextGeneration()
   }
 
+  update() {
+    const players = this.players.children.entries as Player[]
+    const activePlayers = players.filter((p) => p.active)
+
+    if (activePlayers.length === 0) {
+      this.nextGeneration()
+      return
+    }
+
+    // kill colliding players
+    this.physics.overlap(this.players, this.pipes, (_player) => {
+      const player = _player as Player
+      player.kill()
+    })
+
+    // kill out of bounds pipes, increase score
+    for (let _pipe of this.pipes.children.entries) {
+      const pipe = _pipe as Pipe
+      if (pipe.active && pipe.x < -50) {
+        pipe.kill()
+        this.data.inc('currentScore')
+      }
+    }
+  }
+
+  reset = () => {
+    this.data.set('generationCount', 0)
+    this.data.set('currentScore', 0)
+    this.data.set('bestScore', 0)
+    this.resetPipes()
+    const players = this.players.children.entries as Player[]
+    players.forEach((p) => p.kill())
+  }
+
+  spawnPipe = () => {
+    const h = this.cameras.main.height
+    const y = Phaser.Math.RND.between(h * 0.2, h * 0.8)
+    this.pipes.get().spawn(y + CONFIG.pipeDistance, CONFIG.pipeSpeed, 0)
+    this.pipes.get().spawn(y - CONFIG.pipeDistance, CONFIG.pipeSpeed, 1)
+  }
+
   nextGeneration = () => {
-    const pipes = this.pipes.children.entries as Pipe[]
+    if (this.data.values.currentScore > this.data.values.bestScore) {
+      this.data.set('bestScore', this.data.values.currentScore)
+    }
+    this.data.set('currentScore', 0)
+    this.data.inc('generationCount')
+
+    const mostFitPlayer = this.getMostFit()
+
+    this.resetPipes()
+    for (let i = 0; i < CONFIG.playerCount; i++) {
+      const neuralNetwork = mostFitPlayer?.neuralNetwork
+        .copy()
+        .mutateByRate(CONFIG.mutationRate)
+      this.players.get().spawn(neuralNetwork)
+    }
+  }
+
+  getMostFit = () => {
     const players = this.players.children.entries as Player[]
     const totalScore = players.reduce((sum, p) => sum + p.score, 0)
     const playersWithFitness = players.map((p) => ({
@@ -71,66 +118,77 @@ export class Game extends Scene {
       (a, b) => b.fitness - a.fitness,
     )
     const mostFitPlayer = playersSortedByFitness?.[0]?.player
-    for (let i = 0; i < PLAYER_COUNT; i++) {
-      const r = MUTATION_RATE
-      const neuralNetwork = mostFitPlayer?.neuralNetwork.mutate(
-        (v) => v + (Math.random() < r ? randomGaussian(0, r) : 0),
-      )
-      this.players.get().spawn(neuralNetwork)
-    }
 
+    return mostFitPlayer
+  }
+
+  resetPipes = () => {
+    const pipes = this.pipes.children.entries as Pipe[]
     pipes.forEach((p) => p.kill())
     this.spawnEvent?.destroy()
     this.spawnEvent = this.time.addEvent({
-      delay: PIPE_DELAY,
-      startAt: PIPE_DELAY,
+      delay: CONFIG.pipeDelay,
+      startAt: CONFIG.pipeDelay,
       repeat: -1,
       callback: this.spawnPipe,
     })
-    this.generationCount++
-    this.generationText.setText(`Generation ${this.generationCount}`)
   }
 
-  spawnPipe = () => {
-    const h = this.cameras.main.height
-    const y = Phaser.Math.RND.between(h * 0.2, h * 0.8)
-    this.pipes.get().spawn(y + PIPE_DISTANCE, PIPE_SPEED, 0)
-    this.pipes.get().spawn(y - PIPE_DISTANCE, PIPE_SPEED, 1)
+  setupUI = () => {
+    this.data.events.on('changedata', (_: any, key: string, number: number) => {
+      if (key === 'generationCount')
+        this.generationText.setText(`Generation: ${number}`)
+
+      // each pipe set counts as 2 points, so we divide by 2 here to normalize
+      if (key === 'currentScore')
+        this.currentScoreText.setText(`Score: ${number / 2}`)
+      if (key === 'bestScore') this.bestScoreText.setText(`Best: ${number / 2}`)
+    })
+
+    let y = 650
+    let x = this.cameras.main.width - 20
+
+    this.generationText = this.add
+      .text(x, y, 'Generation: 0')
+      .setDepth(999)
+      .setFontSize(32)
+      .setOrigin(1, 0.5)
+
+    this.currentScoreText = this.add
+      .text(x, y + 40, 'Score: 0')
+      .setDepth(999)
+      .setFontSize(32)
+      .setOrigin(1, 0.5)
+
+    this.bestScoreText = this.add
+      .text(x, y + 80, 'Best: 0')
+      .setDepth(999)
+      .setFontSize(32)
+      .setOrigin(1, 0.5)
+
+    this.gui = new dat.GUI({ width: 300 })
+
+    this.gui.add(this.time, 'timeScale', 1, 15, 1).onChange((c) => {
+      this.physics.world.timeScale = 1 / c
+      this.time.timeScale = c
+    })
+
+    this.gui.add(CONFIG, 'gravity', 200, 3200, 150).onFinishChange(this.reset)
+    this.gui
+      .add(CONFIG, 'jumpHeight', -1000, -200, 50)
+      .onFinishChange(this.reset)
+    this.gui.add(CONFIG, 'pipeSpeed', 50, 1000, 50).onFinishChange(this.reset)
+    this.gui.add(CONFIG, 'playerCount', 50, 1000, 50).onFinishChange(this.reset)
+    this.gui
+      .add(CONFIG, 'pipeDelay', 1000, 4000, 500)
+      .onFinishChange(this.reset)
+    this.gui.add(CONFIG, 'pipeDistance', 50, 200, 10).onFinishChange(this.reset)
+
+    this.gui.add(this, 'logBestPlayer')
   }
 
-  update() {
-    const players = this.players.children.entries as Player[]
-
-    if (players.every((p) => !p.active)) {
-      this.nextGeneration()
-    } else {
-      players
-        .filter((p) => p.active)
-        .forEach((player) => {
-          if (player.y > this.cameras.main.height * 1.2 || player.y < -50) {
-            player.die()
-          }
-        })
-
-      this.physics.overlap(this.players, this.pipes, (_player) => {
-        const player = _player as Player
-        player.die()
-      })
-
-      for (let _pipe of this.pipes.children.entries) {
-        const pipe = _pipe as Pipe
-        if (pipe.active && pipe.x < -50) {
-          pipe.kill()
-        }
-      }
-    }
+  logBestPlayer = () => {
+    const bestPlayer = this.getMostFit()
+    console.log(bestPlayer.neuralNetwork.serialize())
   }
-}
-
-function randomGaussian(mean = 0, stdev = 1) {
-  const u = 1 - Math.random() // Converting [0,1) to (0,1]
-  const v = Math.random()
-  const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v)
-  // Transform to the desired mean and standard deviation:
-  return z * stdev + mean
 }
