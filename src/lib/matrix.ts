@@ -1,9 +1,15 @@
 export type MatrixFunc = (v: number, i: number, j: number) => number
+export type MatrixData = {
+  rows: number
+  cols: number
+  data: number[][]
+}
 
 export class Matrix {
   rows: number
   cols: number
   data: number[][]
+
   constructor(rows: number, cols: number) {
     this.rows = rows
     this.cols = cols
@@ -12,14 +18,11 @@ export class Matrix {
       .map(() => Array(this.cols).fill(0))
   }
 
-  copy() {
-    let m = new Matrix(this.rows, this.cols)
-    for (let i = 0; i < this.rows; i++) {
-      for (let j = 0; j < this.cols; j++) {
-        m.data[i][j] = this.data[i][j]
-      }
-    }
-    return m
+  static map(matrix: Matrix, func: MatrixFunc) {
+    // Apply a function to every element of matrix
+    return new Matrix(matrix.rows, matrix.cols).map((_, i, j) =>
+      func(matrix.data[i][j], i, j),
+    )
   }
 
   static fromArray(arr: number[]) {
@@ -36,32 +39,6 @@ export class Matrix {
     return new Matrix(a.rows, a.cols).map(
       (_, i, j) => a.data[i][j] - b.data[i][j],
     )
-  }
-
-  toArray() {
-    let arr = []
-    for (let i = 0; i < this.rows; i++) {
-      for (let j = 0; j < this.cols; j++) {
-        arr.push(this.data[i][j])
-      }
-    }
-    return arr
-  }
-
-  randomize() {
-    return this.map(() => Math.random() * 2 - 1)
-  }
-
-  add(n: Matrix | number) {
-    if (n instanceof Matrix) {
-      if (this.rows !== n.rows || this.cols !== n.cols) {
-        console.log('Columns and Rows of A must match Columns and Rows of B.')
-        return
-      }
-      return this.map((e, i, j) => e + n.data[i][j])
-    } else {
-      return this.map((e) => e + n)
-    }
   }
 
   static transpose(matrix: Matrix) {
@@ -85,6 +62,23 @@ export class Matrix {
       }
       return sum
     })
+  }
+
+  static deserialize(dataString: string) {
+    const data = JSON.parse(dataString) as MatrixData
+    let matrix = new Matrix(data.rows, data.cols)
+    matrix.data = data.data
+    return matrix
+  }
+
+  copy() {
+    let m = new Matrix(this.rows, this.cols)
+    for (let i = 0; i < this.rows; i++) {
+      for (let j = 0; j < this.cols; j++) {
+        m.data[i][j] = this.data[i][j]
+      }
+    }
+    return m
   }
 
   multiply(n: Matrix | number) {
@@ -113,34 +107,33 @@ export class Matrix {
     return this
   }
 
-  static map(matrix: Matrix, func: MatrixFunc) {
-    // Apply a function to every element of matrix
-    return new Matrix(matrix.rows, matrix.cols).map((_, i, j) =>
-      func(matrix.data[i][j], i, j),
-    )
+  randomize() {
+    // randomize all values to range -1 -> +1
+    return this.map(() => Math.random() * 2 - 1)
   }
 
-  print() {
-    console.table(this.data)
-    return this
+  add(n: Matrix | number) {
+    if (n instanceof Matrix) {
+      if (this.rows !== n.rows || this.cols !== n.cols) {
+        console.log('Columns and Rows of A must match Columns and Rows of B.')
+        return
+      }
+      return this.map((e, i, j) => e + n.data[i][j])
+    } else {
+      return this.map((e) => e + n)
+    }
   }
 
-  serialize() {
-    return JSON.stringify(this)
-  }
-
-  static deserialize(
-    data: string | { rows: number; cols: number; data: number[][] },
-  ) {
-    if (typeof data == 'string') {
-      data = JSON.parse(data) as {
-        rows: number
-        cols: number
-        data: number[][]
+  toArray() {
+    let arr = []
+    for (let i = 0; i < this.rows; i++) {
+      for (let j = 0; j < this.cols; j++) {
+        arr.push(this.data[i][j])
       }
     }
-    let matrix = new Matrix(data.rows, data.cols)
-    matrix.data = data.data
-    return matrix
+    return arr
   }
+
+  print = () => console.table(this.data)
+  serialize = () => JSON.stringify(this)
 }
