@@ -5,19 +5,27 @@ import { Pipe } from './Pipe'
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
   neuralNetwork: NeuralNetwork
+  score: number
   declare scene: Game
+
   constructor(scene: Game) {
-    super(
-      scene,
-      scene.cameras.main.width * 0.1,
-      scene.cameras.main.height * 0.5,
-      'player',
-    )
+    super(scene, -999, -999, 'player')
     this.scene.add.existing(this)
     this.scene.physics.add.existing(this)
-    this.setGravityY(GRAVITY).setScale(6).setSize(5, 5).setOffset(5, 7)
+    this.setScale(6).setSize(5, 5).setOffset(5, 7)
+  }
 
-    this.neuralNetwork = new NeuralNetwork(4, 4, 1)
+  spawn = (neuralNetwork = new NeuralNetwork(5, 5, 1)) => {
+    this.neuralNetwork = neuralNetwork
+    this.score = 0
+    this.setActive(true)
+      .setVisible(true)
+      .setGravityY(GRAVITY)
+      .setVelocity(0)
+      .setPosition(
+        this.scene.cameras.main.width * 0.1,
+        this.scene.cameras.main.height * 0.5,
+      )
   }
 
   jump = () => {
@@ -38,9 +46,17 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       .sort((a, b) => a.x - b.x)
       .slice(0, 2)
 
-    if (closest.length < 2) return
+    if (closest.length < 2 || !this.active) return
 
-    const inputs = [this.y, closest[0].y, closest[1].y, closest[0].x]
+    this.score++
+
+    const inputs = [
+      this.y,
+      this.body!.velocity.y,
+      closest[0].y,
+      closest[1].y,
+      closest[0].x,
+    ]
 
     const [result] = this.neuralNetwork.predict(inputs)
 

@@ -18,11 +18,13 @@
         "build": "vite build --config vite/config.prod.mjs"
     },
     "devDependencies": {
+        "@types/dat.gui": "^0.7.13",
         "terser": "^5.31.0",
         "typescript": "^5.4.5",
         "vite": "^5.2.11"
     },
     "dependencies": {
+        "dat.gui": "^0.7.9",
         "phaser": "^3.80.1"
     }
 }
