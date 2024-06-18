@@ -15,7 +15,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setScale(6).setSize(5, 5).setOffset(5, 7)
   }
 
-  spawn = (neuralNetwork = new NeuralNetwork(5, 5, 1)) => {
+  spawn = (neuralNetwork = new NeuralNetwork(5, 8, 2)) => {
     this.neuralNetwork = neuralNetwork
     this.score = 0
     this.setActive(true)
@@ -52,19 +52,25 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.kill()
     }
 
-    this.score++
+    // get more points the closer you are to the center of the pipe gap
+    const val = Math.abs(
+      this.y / this.scene.cameras.main.height -
+        (closest[1].y + CONFIG.pipeDistance / 2) /
+          this.scene.cameras.main.height,
+    )
+
+    this.score += Math.max(0, 1 - val * 40)
 
     const inputs = [
-      this.y,
-      this.body!.velocity.y,
-      closest[0].y,
-      closest[1].y,
-      closest[0].x,
+      this.y / this.scene.cameras.main.height,
+      closest[1].y / this.scene.cameras.main.height,
+      closest[0].y / this.scene.cameras.main.height,
+      closest[0].x / this.scene.cameras.main.width,
+      this.body!.velocity.y / 1000,
     ]
 
-    const [result] = this.neuralNetwork.predict(inputs)
-
-    if (result > 0.5) {
+    const output = this.neuralNetwork.predict(inputs)
+    if (output[0] > output[1]) {
       this.jump()
     }
   }

@@ -20,6 +20,14 @@ export class Game extends Scene {
     super('Game')
   }
 
+  get playersEntries() {
+    return this.players.children.entries as Player[]
+  }
+
+  get pipesEntries() {
+    return this.pipes.children.entries as Pipe[]
+  }
+
   preload() {
     this.load.setPath('assets')
     this.load.image('player', 'player.png')
@@ -49,8 +57,7 @@ export class Game extends Scene {
   }
 
   update() {
-    const players = this.players.children.entries as Player[]
-    const activePlayers = players.filter((p) => p.active)
+    const activePlayers = this.playersEntries.filter((p) => p.active)
 
     if (activePlayers.length === 0) {
       this.nextGeneration()
@@ -78,8 +85,7 @@ export class Game extends Scene {
     this.data.set('currentScore', 0)
     this.data.set('bestScore', 0)
     this.resetPipes()
-    const players = this.players.children.entries as Player[]
-    players.forEach((p) => p.kill())
+    this.playersEntries.forEach((p) => p.kill())
   }
 
   spawnPipe = () => {
@@ -96,35 +102,35 @@ export class Game extends Scene {
     this.data.set('currentScore', 0)
     this.data.inc('generationCount')
 
-    const mostFitPlayer = this.getMostFit()
-
     this.resetPipes()
+    const existingNetworks = this.getPlayersWithFitness()
+      .map(({ player, fitness }: { player: Player; fitness: number }) => ({
+        network: player.neuralNetwork.copy(),
+        score: Math.round(player.score),
+        fitness,
+      }))
+      .sort((a, b) => b.fitness - a.fitness)
     for (let i = 0; i < CONFIG.playerCount; i++) {
-      const neuralNetwork = mostFitPlayer?.neuralNetwork
-        .copy()
-        .mutateByRate(CONFIG.mutationRate)
+      const pick = this.weightedPick(existingNetworks)?.network
+      const neuralNetwork = pick?.copy()
+      neuralNetwork?.mutateByRate(CONFIG.mutationRate)
+
       this.players.get().spawn(neuralNetwork)
     }
   }
 
-  getMostFit = () => {
-    const players = this.players.children.entries as Player[]
-    const totalScore = players.reduce((sum, p) => sum + p.score, 0)
-    const playersWithFitness = players.map((p) => ({
-      player: p,
-      fitness: p.score / totalScore,
-    }))
-    const playersSortedByFitness = playersWithFitness.sort(
-      (a, b) => b.fitness - a.fitness,
-    )
-    const mostFitPlayer = playersSortedByFitness?.[0]?.player
-
-    return mostFitPlayer
+  getPlayersWithFitness = () => {
+    const totalScore = this.playersEntries.reduce((sum, p) => sum + p.score, 0)
+    return this.playersEntries
+      .map((p) => ({
+        player: p,
+        fitness: p.score / totalScore,
+      }))
+      .sort((a, b) => b.fitness - a.fitness)
   }
 
   resetPipes = () => {
-    const pipes = this.pipes.children.entries as Pipe[]
-    pipes.forEach((p) => p.kill())
+    this.pipesEntries.forEach((p) => p.kill())
     this.spawnEvent?.destroy()
     this.spawnEvent = this.time.addEvent({
       delay: CONFIG.pipeDelay,
@@ -188,7 +194,22 @@ export class Game extends Scene {
   }
 
   logBestPlayer = () => {
-    const bestPlayer = this.getMostFit()
+    const bestPlayer = this.getPlayersWithFitness()?.[0]?.player
     console.log(bestPlayer.neuralNetwork.serialize())
+  }
+  weightedPick = (options: { fitness: number; network: any }[]) => {
+    if (options.length === 0) return undefined
+    var i
+
+    var weights = [options[0].fitness]
+
+    for (i = 1; i < options.length; i++)
+      weights[i] = options[i].fitness + weights[i - 1]
+
+    var random = Math.random() * weights[weights.length - 1]
+
+    for (i = 0; i < weights.length; i++) if (weights[i] > random) break
+
+    return options[i]
   }
 }
