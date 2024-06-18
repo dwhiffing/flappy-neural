@@ -1,5 +1,6 @@
 import { Matrix, MatrixFunc } from './matrix'
 
+const LEARNING_RATE = 0.1
 export class NeuralNetwork {
   inputNodeCount: number
   hiddenNodeCount: number
@@ -8,7 +9,6 @@ export class NeuralNetwork {
   weightsHiddenToOutput: Matrix
   biasHidden: Matrix
   biasOutput: Matrix
-  learningRate: number
   activationFunction: (n: number) => number
   activationDeltaFunction: (n: number) => number
   constructor(
@@ -51,7 +51,6 @@ export class NeuralNetwork {
       this.biasOutput.randomize()
     }
 
-    this.learningRate = 0.1
     this.activationFunction = (x: number) => 1 / (1 + Math.exp(-x))
     this.activationDeltaFunction = (y: number) => y * (1 - y)
   }
@@ -67,7 +66,6 @@ export class NeuralNetwork {
     nn.weightsHiddenToOutput = Matrix.deserialize(data.weightsHiddenToOutput)
     nn.biasHidden = Matrix.deserialize(data.biasHidden)
     nn.biasOutput = Matrix.deserialize(data.biasOutput)
-    nn.learningRate = data.learningRate
     return nn
   }
 
@@ -110,7 +108,7 @@ export class NeuralNetwork {
     return z * stdev + mean
   }
 
-  // not used for genetic algorithm
+  // IGNORE: not used for genetic algorithm
   train(input_array: number[], target_array: number[]) {
     // Generating the Hidden Outputs
     const inputs = Matrix.fromArray(input_array)
@@ -132,7 +130,7 @@ export class NeuralNetwork {
     // Calculate gradient
     const gradients = Matrix.map(outputs, this.activationDeltaFunction)
     gradients.multiply(output_errors)
-    gradients.multiply(this.learningRate)
+    gradients.multiply(LEARNING_RATE)
 
     // Calculate deltas
     const hidden_T = Matrix.transpose(hidden)
@@ -150,7 +148,7 @@ export class NeuralNetwork {
     // Calculate hidden gradient
     const hidden_gradient = Matrix.map(hidden, this.activationDeltaFunction)
     hidden_gradient.multiply(hidden_errors)
-    hidden_gradient.multiply(this.learningRate)
+    hidden_gradient.multiply(LEARNING_RATE)
 
     // Calcuate input->hidden deltas
     const inputs_T = Matrix.transpose(inputs)
