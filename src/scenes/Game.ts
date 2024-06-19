@@ -140,6 +140,14 @@ export class Game extends Scene {
     })
   }
 
+  pause = () => {
+    if (this.scene.isPaused()) {
+      this.scene.resume()
+    } else {
+      this.scene.pause()
+    }
+  }
+
   setupUI = () => {
     this.data.events.on('changedata', (_: any, key: string, number: number) => {
       if (key === 'generationCount')
@@ -191,6 +199,7 @@ export class Game extends Scene {
     this.gui.add(CONFIG, 'pipeDistance', 50, 200, 10).onFinishChange(this.reset)
 
     this.gui.add(this, 'logBestPlayer')
+    this.gui.add(this, 'pause')
   }
 
   logBestPlayer = () => {
