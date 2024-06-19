@@ -3,6 +3,7 @@ import { CONFIG } from '../constants'
 import { Player } from '../sprites/Player'
 import { Pipe } from '../sprites/Pipe'
 import * as dat from 'dat.gui'
+import { NEAT } from '../neat'
 
 export class Game extends Scene {
   players: Phaser.GameObjects.Group
@@ -11,6 +12,7 @@ export class Game extends Scene {
   generationCount: number
   currentScore: number
   bestScore: number
+  neat: NEAT
   generationText: Phaser.GameObjects.Text
   currentScoreText: Phaser.GameObjects.Text
   bestScoreText: Phaser.GameObjects.Text
@@ -53,7 +55,6 @@ export class Game extends Scene {
 
     this.reset()
     this.setupUI()
-    this.nextGeneration()
   }
 
   update() {
@@ -84,8 +85,9 @@ export class Game extends Scene {
     this.data.set('generationCount', 0)
     this.data.set('currentScore', 0)
     this.data.set('bestScore', 0)
+    this.neat = new NEAT(5, 1, CONFIG.playerCount)
     this.resetPipes()
-    this.playersEntries.forEach((p) => p.kill())
+    this.resetPlayers()
   }
 
   spawnPipe = () => {
@@ -95,6 +97,14 @@ export class Game extends Scene {
     this.pipes.get().spawn(y - CONFIG.pipeDistance, CONFIG.pipeSpeed, 1)
   }
 
+  resetPlayers = () => {
+    this.playersEntries.forEach((p) => p.kill())
+    for (let i = 0; i < CONFIG.playerCount; i++) {
+      const network = this.neat.networks[i]
+      this.players.get().spawn(network)
+    }
+  }
+
   nextGeneration = () => {
     if (this.data.values.currentScore > this.data.values.bestScore) {
       this.data.set('bestScore', this.data.values.currentScore)
@@ -102,32 +112,15 @@ export class Game extends Scene {
     this.data.set('currentScore', 0)
     this.data.inc('generationCount')
 
+    this.neat.evolve()
     this.resetPipes()
-    const existingNetworks = this.getPlayersWithFitness()
-      .map(({ player, fitness }: { player: Player; fitness: number }) => ({
-        network: player.neuralNetwork.copy(),
-        score: Math.round(player.score),
-        fitness,
-      }))
-      .sort((a, b) => b.fitness - a.fitness)
-    for (let i = 0; i < CONFIG.playerCount; i++) {
-      const pick = this.weightedPick(existingNetworks)?.network
-      const neuralNetwork = pick?.copy()
-      neuralNetwork?.mutateByRate(CONFIG.mutationRate)
-
-      this.players.get().spawn(neuralNetwork)
-    }
+    this.resetPlayers()
   }
 
-  getPlayersWithFitness = () => {
-    const totalScore = this.playersEntries.reduce((sum, p) => sum + p.score, 0)
-    return this.playersEntries
-      .map((p) => ({
-        player: p,
-        fitness: p.score / totalScore,
-      }))
+  getPlayersWithFitness = () =>
+    this.playersEntries
+      .map((p) => ({ player: p, fitness: p.network.fitness }))
       .sort((a, b) => b.fitness - a.fitness)
-  }
 
   resetPipes = () => {
     this.pipesEntries.forEach((p) => p.kill())
@@ -192,7 +185,7 @@ export class Game extends Scene {
       .add(CONFIG, 'jumpHeight', -1000, -200, 50)
       .onFinishChange(this.reset)
     this.gui.add(CONFIG, 'pipeSpeed', 50, 1000, 50).onFinishChange(this.reset)
-    this.gui.add(CONFIG, 'playerCount', 50, 1000, 50).onFinishChange(this.reset)
+    this.gui.add(CONFIG, 'playerCount', 10, 1000, 10).onFinishChange(this.reset)
     this.gui
       .add(CONFIG, 'pipeDelay', 1000, 4000, 500)
       .onFinishChange(this.reset)
@@ -204,21 +197,6 @@ export class Game extends Scene {
 
   logBestPlayer = () => {
     const bestPlayer = this.getPlayersWithFitness()?.[0]?.player
-    console.log(bestPlayer.neuralNetwork.serialize())
-  }
-  weightedPick = (options: { fitness: number; network: any }[]) => {
-    if (options.length === 0) return undefined
-    var i
-
-    var weights = [options[0].fitness]
-
-    for (i = 1; i < options.length; i++)
-      weights[i] = options[i].fitness + weights[i - 1]
-
-    var random = Math.random() * weights[weights.length - 1]
-
-    for (i = 0; i < weights.length; i++) if (weights[i] > random) break
-
-    return options[i]
+    console.log(bestPlayer.network)
   }
 }

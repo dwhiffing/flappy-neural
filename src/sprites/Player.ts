@@ -1,11 +1,10 @@
 import { CONFIG } from '../constants'
-import { NeuralNetwork } from '../lib/neuralNetwork'
+import { NeuralNetwork } from '../neat'
 import { Game } from '../scenes/Game'
 import { Pipe } from './Pipe'
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
-  neuralNetwork: NeuralNetwork
-  score: number
+  network: NeuralNetwork
   declare scene: Game
 
   constructor(scene: Game) {
@@ -15,9 +14,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setScale(6).setSize(5, 5).setOffset(5, 7)
   }
 
-  spawn = (neuralNetwork = new NeuralNetwork(5, 8, 2)) => {
-    this.neuralNetwork = neuralNetwork
-    this.score = 0
+  spawn = (network = new NeuralNetwork(5, 1)) => {
+    this.network = network
     this.setActive(true)
       .setVisible(true)
       .setGravityY(CONFIG.gravity)
@@ -59,7 +57,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
           this.scene.cameras.main.height,
     )
 
-    this.score += Math.max(0, 1 - val * 40)
+    this.network.fitness += Math.max(0, 1 - val * 100)
 
     const inputs = [
       this.y / this.scene.cameras.main.height,
@@ -69,8 +67,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.body!.velocity.y / 1000,
     ]
 
-    const output = this.neuralNetwork.predict(inputs)
-    if (output[0] > output[1]) {
+    const output = this.network.predict(inputs)
+    if (output[0] > 0.5) {
       this.jump()
     }
   }
