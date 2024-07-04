@@ -104,7 +104,7 @@ export class BaseGame extends Scene {
     let x = this.cameras.main.width - 20
 
     this.setupUIElement(x, y - 80, 'generationCount', (n) => `Generation: ${n}`)
-    this.setupUIElement(x, y - 40, 'currentScore', (n) => `Score: ${n / 2}`)
-    this.setupUIElement(x, y, 'bestScore', (n) => `Best: ${n / 2}`)
+    this.setupUIElement(x, y - 40, 'currentScore', (n) => `Score: ${n}`)
+    this.setupUIElement(x, y, 'bestScore', (n) => `Best: ${n}`)
   }
 }

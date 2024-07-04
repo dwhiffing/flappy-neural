@@ -69,7 +69,7 @@ export class Flappy extends BaseGame {
       const pipe = _pipe as Pipe
       if (pipe.active && pipe.x < -50) {
         pipe.kill()
-        this.data.inc('currentScore')
+        this.data.inc('currentScore', 0.5)
       }
     }
 
