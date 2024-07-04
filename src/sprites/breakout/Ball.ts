@@ -1,6 +1,6 @@
 import { Scene } from 'phaser'
 
-export class Brick extends Phaser.Physics.Arcade.Sprite {
+export class Ball extends Phaser.Physics.Arcade.Sprite {
   declare body: Phaser.Physics.Arcade.Body
   index: number
 
@@ -8,17 +8,19 @@ export class Brick extends Phaser.Physics.Arcade.Sprite {
     super(scene, x, y, 'brick')
     this.scene.add.existing(this)
     this.scene.physics.add.existing(this)
-    this.setScale(2, 1).setOrigin(0).setImmovable(true)
+    this.setScale(0.5).setBounce(1).setCollideWorldBounds(true)
     // this.setAlpha(0.5)
   }
 
-  spawn(index: number, x: number, y: number) {
+  spawn(index: number) {
     this.index = index
-    this.x = x
-    this.y = y
+    this.setVelocity(0, 500).setPosition(
+      this.scene.cameras.main.width / 2,
+      this.scene.cameras.main.height / 2,
+    )
+    this.setCollidesWith(index)
     this.setActive(true)
     this.setVisible(true)
-    this.setCollidesWith(index)
   }
 
   kill() {

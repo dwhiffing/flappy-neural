@@ -9,5 +9,7 @@ export let FLAPPY_CONFIG = {
 }
 
 export let BREAKOUT_CONFIG = {
-  playerCount: 10,
+  playerCount: 1,
+  playerSpeed: 500,
+  bounceRatio: 0.5,
 }
