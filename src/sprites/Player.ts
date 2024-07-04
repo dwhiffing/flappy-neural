@@ -1,13 +1,13 @@
 import { CONFIG } from '../constants'
 import { NeuralNetwork } from '../neat'
-import { Game } from '../scenes/Game'
+import { Flappy } from '../scenes/Flappy'
 import { Pipe } from './Pipe'
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
   network: NeuralNetwork
-  declare scene: Game
+  declare scene: Flappy
 
-  constructor(scene: Game) {
+  constructor(scene: Flappy) {
     super(scene, -999, -999, 'player')
     this.scene.add.existing(this)
     this.scene.physics.add.existing(this)

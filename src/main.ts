@@ -1,4 +1,5 @@
-import { Game as MainGame } from './scenes/Game'
+import { Menu } from './scenes/Menu'
+import { Flappy } from './scenes/Flappy'
 import { AUTO, Game, Scale, Types } from 'phaser'
 
 //  Find out more information about the Game Config at:
@@ -18,7 +19,7 @@ const config: Types.Core.GameConfig = {
     default: 'arcade',
     // arcade: { debug: true },
   },
-  scene: [MainGame],
+  scene: [Menu, Flappy],
 }
 
 export default new Game(config)

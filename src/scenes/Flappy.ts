@@ -5,7 +5,7 @@ import { Pipe } from '../sprites/Pipe'
 import * as dat from 'dat.gui'
 import { NEAT } from '../neat'
 
-export class Game extends Scene {
+export class Flappy extends Scene {
   players: Phaser.GameObjects.Group
   pipes: Phaser.GameObjects.Group
   spawnEvent: Phaser.Time.TimerEvent
@@ -19,7 +19,7 @@ export class Game extends Scene {
   gui: dat.GUI
 
   constructor() {
-    super('Game')
+    super('Flappy')
   }
 
   get playersEntries() {
