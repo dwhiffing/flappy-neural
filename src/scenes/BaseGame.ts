@@ -1,3 +1,4 @@
+import * as dat from 'dat.gui'
 import { Scene } from 'phaser'
 import { NEAT } from '../neat'
 
@@ -15,6 +16,7 @@ export class BaseGame extends Scene {
   outputCount: number
   cursors: Phaser.Types.Input.Keyboard.CursorKeys
   spaceKey: Phaser.Input.Keyboard.Key
+  gui: dat.GUI
 
   constructor(sceneKey: string) {
     super(sceneKey)
@@ -63,9 +65,16 @@ export class BaseGame extends Scene {
     }
   }
 
-  togglePlayMode() {
-    this.isPlayMode = !this.isPlayMode
-    this.reset()
+  setupDatGUI() {
+    this.gui = new dat.GUI({ width: 300 })
+
+    this.gui.add(this.time, 'timeScale', 1, 15, 1).onChange((c) => {
+      this.physics.world.timeScale = 1 / c
+      this.time.timeScale = c
+    })
+
+    this.gui.add(this, 'pause')
+    this.gui.add(this, 'isPlayMode').onFinishChange(this.reset.bind(this))
   }
 
   setupUIElement = (

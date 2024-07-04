@@ -1,14 +1,12 @@
 import { FLAPPY_CONFIG as CONFIG } from '../constants'
 import { Player } from '../sprites/flappy/Player'
 import { Pipe } from '../sprites/flappy/Pipe'
-import * as dat from 'dat.gui'
 import { BaseGame } from './BaseGame'
 
 export class Flappy extends BaseGame {
   players: Phaser.GameObjects.Group
   pipes: Phaser.GameObjects.Group
   spawnEvent: Phaser.Time.TimerEvent
-  gui: dat.GUI
 
   constructor() {
     super('Flappy')
@@ -122,26 +120,26 @@ export class Flappy extends BaseGame {
     })
   }
 
-  setupDatGUI = () => {
-    this.gui = new dat.GUI({ width: 300 })
+  setupDatGUI() {
+    super.setupDatGUI()
 
-    this.gui.add(this.time, 'timeScale', 1, 15, 1).onChange((c) => {
-      this.physics.world.timeScale = 1 / c
-      this.time.timeScale = c
-    })
-
-    this.gui.add(CONFIG, 'gravity', 200, 3200, 150).onFinishChange(this.reset)
+    this.gui
+      .add(CONFIG, 'gravity', 200, 3200, 150)
+      .onFinishChange(this.reset.bind(this))
     this.gui
       .add(CONFIG, 'jumpHeight', -1000, -200, 50)
-      .onFinishChange(this.reset)
-    this.gui.add(CONFIG, 'pipeSpeed', 50, 1000, 50).onFinishChange(this.reset)
-    this.gui.add(CONFIG, 'playerCount', 10, 1000, 10).onFinishChange(this.reset)
+      .onFinishChange(this.reset.bind(this))
+    this.gui
+      .add(CONFIG, 'pipeSpeed', 50, 1000, 50)
+      .onFinishChange(this.reset.bind(this))
+    this.gui
+      .add(CONFIG, 'playerCount', 10, 1000, 10)
+      .onFinishChange(this.reset.bind(this))
     this.gui
       .add(CONFIG, 'pipeDelay', 1000, 4000, 500)
-      .onFinishChange(this.reset)
-    this.gui.add(CONFIG, 'pipeDistance', 50, 200, 10).onFinishChange(this.reset)
-
-    this.gui.add(this, 'pause')
-    this.gui.add(this, 'togglePlayMode')
+      .onFinishChange(this.reset.bind(this))
+    this.gui
+      .add(CONFIG, 'pipeDistance', 50, 200, 10)
+      .onFinishChange(this.reset.bind(this))
   }
 }
