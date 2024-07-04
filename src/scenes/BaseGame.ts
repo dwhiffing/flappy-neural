@@ -5,20 +5,44 @@ export class BaseGame extends Scene {
   generationCount: number
   currentScore: number
   bestScore: number
+  playerCount: number
   neat: NEAT
   generationText: Phaser.GameObjects.Text
   currentScoreText: Phaser.GameObjects.Text
   bestScoreText: Phaser.GameObjects.Text
+  isPlayMode: boolean
+  inputCount: number
+  outputCount: number
+  cursors: Phaser.Types.Input.Keyboard.CursorKeys
+  spaceKey: Phaser.Input.Keyboard.Key
 
   constructor(sceneKey: string) {
     super(sceneKey)
+    this.isPlayMode = false
+    this.playerCount = 1
+    this.inputCount = 1
+    this.outputCount = 1
   }
 
-  reset(playerCount: number) {
+  create() {
+    this.cursors = this.input.keyboard!.createCursorKeys()
+    this.spaceKey = this.input.keyboard!.addKey('SPACE')
+  }
+
+  reset(playerCount?: number, inputCount?: number, outputCount?: number) {
+    if (typeof playerCount === 'number') {
+      this.playerCount = playerCount
+    }
+    if (typeof inputCount === 'number') {
+      this.inputCount = inputCount
+    }
+    if (typeof outputCount === 'number') {
+      this.outputCount = outputCount
+    }
     this.data.set('generationCount', 0)
     this.data.set('currentScore', 0)
     this.data.set('bestScore', 0)
-    this.neat = new NEAT(5, 1, playerCount)
+    this.neat = new NEAT(this.inputCount, this.outputCount, this.playerCount)
   }
 
   nextGeneration() {
@@ -37,6 +61,11 @@ export class BaseGame extends Scene {
     } else {
       this.scene.pause()
     }
+  }
+
+  togglePlayMode() {
+    this.isPlayMode = !this.isPlayMode
+    this.reset()
   }
 
   setupUIElement = (

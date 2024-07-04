@@ -1,10 +1,10 @@
-import { CONFIG } from '../../constants'
+import { FLAPPY_CONFIG as CONFIG } from '../../constants'
 import { NeuralNetwork } from '../../neat'
 import { Flappy } from '../../scenes/Flappy'
 import { Pipe } from './Pipe'
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
-  network: NeuralNetwork
+  network?: NeuralNetwork
   declare scene: Flappy
 
   constructor(scene: Flappy) {
@@ -14,8 +14,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setScale(6).setSize(5, 5).setOffset(5, 7)
   }
 
-  spawn = (network = new NeuralNetwork(5, 1)) => {
-    this.network = network
+  spawn = (network?: NeuralNetwork) => {
+    if (network) {
+      this.network = network
+    } else {
+      this.network = undefined
+    }
     this.setActive(true)
       .setVisible(true)
       .setGravityY(CONFIG.gravity)
@@ -39,37 +43,39 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   update = () => {
-    const closest = (this.scene.pipes.children.entries as Pipe[])
-      .filter((p) => p.active)
-      .sort((a, b) => a.x - b.x)
-      .slice(0, 2)
+    if (!this.active) return
 
-    if (closest.length < 2 || !this.active) return
+    const cam = this.scene.cameras.main
 
-    if (this.y > this.scene.cameras.main.height * 1.2 || this.y < -50) {
+    if (this.y > cam.height * 1.2 || this.y < -50) {
       this.kill()
     }
 
-    // get more points the closer you are to the center of the pipe gap
-    const val = Math.abs(
-      this.y / this.scene.cameras.main.height -
-        (closest[1].y + CONFIG.pipeDistance / 2) /
-          this.scene.cameras.main.height,
-    )
+    if (this.network) {
+      const closest = (this.scene.pipes.children.entries as Pipe[])
+        .filter((p) => p.active)
+        .sort((a, b) => a.x - b.x)
+        .slice(0, 2)
+      if (closest.length < 2) return
+      // get more points the closer you are to the center of the pipe gap
+      const val = Math.abs(
+        this.y / cam.height -
+          (closest[1].y + CONFIG.pipeDistance / 2) / cam.height,
+      )
+      this.network.fitness += Math.max(0, 1 - val * 100)
 
-    this.network.fitness += Math.max(0, 1 - val * 100)
+      const inputs = [
+        this.y / cam.height,
+        closest[1].y / cam.height,
+        closest[0].y / cam.height,
+        closest[0].x / cam.width,
+        this.body!.velocity.y / 1000,
+      ]
 
-    const inputs = [
-      this.y / this.scene.cameras.main.height,
-      closest[1].y / this.scene.cameras.main.height,
-      closest[0].y / this.scene.cameras.main.height,
-      closest[0].x / this.scene.cameras.main.width,
-      this.body!.velocity.y / 1000,
-    ]
-
-    const output = this.network.predict(inputs)
-    if (output[0] > 0.5) {
-      this.jump()
+      const output = this.network.predict(inputs)
+      if (output[0] > 0.5) {
+        this.jump()
+      }
     }
   }
 }

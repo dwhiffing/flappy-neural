@@ -30,6 +30,8 @@ export class Flappy extends BaseGame {
   }
 
   create() {
+    super.create()
+
     const w = this.cameras.main.width
     const h = this.cameras.main.height
 
@@ -72,10 +74,14 @@ export class Flappy extends BaseGame {
         this.data.inc('currentScore')
       }
     }
+
+    if (this.isPlayMode && this.input.keyboard?.checkDown(this.spaceKey, 100)) {
+      activePlayers[0].jump()
+    }
   }
 
   reset() {
-    super.reset(CONFIG.playerCount)
+    super.reset(CONFIG.playerCount, 5, 1)
     this.resetPipes()
     this.resetPlayers()
   }
@@ -89,6 +95,10 @@ export class Flappy extends BaseGame {
 
   resetPlayers = () => {
     this.playersEntries.forEach((p) => p.kill())
+    if (this.isPlayMode) {
+      this.players.get().spawn()
+      return
+    }
     for (let i = 0; i < CONFIG.playerCount; i++) {
       const network = this.neat.networks[i]
       this.players.get().spawn(network)
@@ -132,5 +142,6 @@ export class Flappy extends BaseGame {
     this.gui.add(CONFIG, 'pipeDistance', 50, 200, 10).onFinishChange(this.reset)
 
     this.gui.add(this, 'pause')
+    this.gui.add(this, 'togglePlayMode')
   }
 }
