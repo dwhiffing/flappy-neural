@@ -7,3 +7,7 @@ export let FLAPPY_CONFIG = {
   pipeDistance: 150,
   mutationRate: 0.1,
 }
+
+export let BREAKOUT_CONFIG = {
+  playerCount: 10,
+}
