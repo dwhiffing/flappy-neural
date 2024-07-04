@@ -1,4 +1,4 @@
-export let CONFIG = {
+export let FLAPPY_CONFIG = {
   gravity: 800,
   jumpHeight: -500,
   pipeSpeed: 200,

@@ -1,21 +1,13 @@
-import { Scene } from 'phaser'
-import { CONFIG } from '../constants'
-import { Player } from '../sprites/Player'
-import { Pipe } from '../sprites/Pipe'
+import { FLAPPY_CONFIG as CONFIG } from '../constants'
+import { Player } from '../sprites/flappy/Player'
+import { Pipe } from '../sprites/flappy/Pipe'
 import * as dat from 'dat.gui'
-import { NEAT } from '../neat'
+import { BaseGame } from './BaseGame'
 
-export class Flappy extends Scene {
+export class Flappy extends BaseGame {
   players: Phaser.GameObjects.Group
   pipes: Phaser.GameObjects.Group
   spawnEvent: Phaser.Time.TimerEvent
-  generationCount: number
-  currentScore: number
-  bestScore: number
-  neat: NEAT
-  generationText: Phaser.GameObjects.Text
-  currentScoreText: Phaser.GameObjects.Text
-  bestScoreText: Phaser.GameObjects.Text
   gui: dat.GUI
 
   constructor() {
@@ -55,6 +47,7 @@ export class Flappy extends Scene {
 
     this.reset()
     this.setupUI()
+    this.setupDatGUI()
   }
 
   update() {
@@ -81,11 +74,8 @@ export class Flappy extends Scene {
     }
   }
 
-  reset = () => {
-    this.data.set('generationCount', 0)
-    this.data.set('currentScore', 0)
-    this.data.set('bestScore', 0)
-    this.neat = new NEAT(5, 1, CONFIG.playerCount)
+  reset() {
+    super.reset(CONFIG.playerCount)
     this.resetPipes()
     this.resetPlayers()
   }
@@ -105,22 +95,11 @@ export class Flappy extends Scene {
     }
   }
 
-  nextGeneration = () => {
-    if (this.data.values.currentScore > this.data.values.bestScore) {
-      this.data.set('bestScore', this.data.values.currentScore)
-    }
-    this.data.set('currentScore', 0)
-    this.data.inc('generationCount')
-
-    this.neat.evolve()
+  nextGeneration() {
+    super.nextGeneration()
     this.resetPipes()
     this.resetPlayers()
   }
-
-  getPlayersWithFitness = () =>
-    this.playersEntries
-      .map((p) => ({ player: p, fitness: p.network.fitness }))
-      .sort((a, b) => b.fitness - a.fitness)
 
   resetPipes = () => {
     this.pipesEntries.forEach((p) => p.kill())
@@ -133,46 +112,7 @@ export class Flappy extends Scene {
     })
   }
 
-  pause = () => {
-    if (this.scene.isPaused()) {
-      this.scene.resume()
-    } else {
-      this.scene.pause()
-    }
-  }
-
-  setupUI = () => {
-    this.data.events.on('changedata', (_: any, key: string, number: number) => {
-      if (key === 'generationCount')
-        this.generationText.setText(`Generation: ${number}`)
-
-      // each pipe set counts as 2 points, so we divide by 2 here to normalize
-      if (key === 'currentScore')
-        this.currentScoreText.setText(`Score: ${number / 2}`)
-      if (key === 'bestScore') this.bestScoreText.setText(`Best: ${number / 2}`)
-    })
-
-    let y = 650
-    let x = this.cameras.main.width - 20
-
-    this.generationText = this.add
-      .text(x, y, 'Generation: 0')
-      .setDepth(999)
-      .setFontSize(32)
-      .setOrigin(1, 0.5)
-
-    this.currentScoreText = this.add
-      .text(x, y + 40, 'Score: 0')
-      .setDepth(999)
-      .setFontSize(32)
-      .setOrigin(1, 0.5)
-
-    this.bestScoreText = this.add
-      .text(x, y + 80, 'Best: 0')
-      .setDepth(999)
-      .setFontSize(32)
-      .setOrigin(1, 0.5)
-
+  setupDatGUI = () => {
     this.gui = new dat.GUI({ width: 300 })
 
     this.gui.add(this.time, 'timeScale', 1, 15, 1).onChange((c) => {
@@ -191,12 +131,6 @@ export class Flappy extends Scene {
       .onFinishChange(this.reset)
     this.gui.add(CONFIG, 'pipeDistance', 50, 200, 10).onFinishChange(this.reset)
 
-    this.gui.add(this, 'logBestPlayer')
     this.gui.add(this, 'pause')
-  }
-
-  logBestPlayer = () => {
-    const bestPlayer = this.getPlayersWithFitness()?.[0]?.player
-    console.log(bestPlayer.network)
   }
 }

@@ -1,6 +1,6 @@
-import { CONFIG } from '../constants'
-import { NeuralNetwork } from '../neat'
-import { Flappy } from '../scenes/Flappy'
+import { CONFIG } from '../../constants'
+import { NeuralNetwork } from '../../neat'
+import { Flappy } from '../../scenes/Flappy'
 import { Pipe } from './Pipe'
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
