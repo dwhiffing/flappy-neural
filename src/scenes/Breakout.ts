@@ -13,7 +13,6 @@ export class Breakout extends BaseGame {
 
   constructor() {
     super('Breakout')
-    // this.isPlayMode = true
   }
 
   get playersEntries() {
@@ -72,73 +71,29 @@ export class Breakout extends BaseGame {
     })
   }
 
-  checkForNextGen() {
-    if (this.playersEntries.filter((p) => p.active).length === 0) {
-      this.nextGeneration()
-    }
-  }
-
   update() {
-    const activePlayers = this.playersEntries.filter((p) => p.active)
-
-    this.physics.collide(
-      this.bricks,
-      this.balls,
-      (_brick, _ball) => {
-        const brick = _brick as Brick
-        const ball = _ball as Ball
-        brick.kill()
-        this.data.inc('currentScore')
-
-        const player = activePlayers.find((p) => p.index === brick.index)!
-        if (player) {
-          player.network.fitness += 500
-
-          if (
-            this.brickEntries.filter(
-              (b) => b.active && b.index === player.index,
-            ).length === 0
-          ) {
-            player.network.fitness += 50000
-            player.kill()
-            ball.kill()
-            this.checkForNextGen()
-          }
-        }
-      },
-      collisionFilter,
-    )
-
-    this.physics.collide(
-      this.players,
-      this.balls,
-      (_player, _ball) => {
-        const player = _player as Player
-        const ball = _ball as Ball
-
-        if (player.body.touching.up) {
-          if (player) player.network.fitness += 5000
-          const ratio = (player.x - ball.x) / player.body.width + 0.5
-          const range = [0 - CONFIG.bounceRatio, -Math.PI + CONFIG.bounceRatio]
-          const angle = Phaser.Math.Interpolation.Linear(range, ratio)
-          const { x, y } = ball.body.velocity
-          const speed = Math.abs(Math.sqrt(x ** 2 + y ** 2))
-          ball.setVelocity(
-            Math.cos(angle) * speed,
-            Math.min(Math.sin(angle) * speed, -150),
-          )
-        }
-      },
-      collisionFilter,
-    )
+    this.ballEntries
+      .filter((p) => p.active)
+      .forEach((ball) => {
+        const player = this.playersEntries.find((p) => p.index === ball.index)!
+        const bricks = this.brickEntries.filter(
+          (b) => b.active && b.index === ball.index,
+        )
+        this.physics.collide(bricks, ball, (brick) =>
+          this.onBallHitBrick(ball, brick as Brick, player),
+        )
+        this.physics.collide(player, ball, () =>
+          this.onBallHitPlayer(ball, player),
+        )
+      })
 
     if (this.isPlayMode) {
       if (this.input.keyboard?.checkDown(this.cursors.left)) {
-        activePlayers[0].left()
+        this.playersEntries[0].left()
       } else if (this.input.keyboard?.checkDown(this.cursors.right)) {
-        activePlayers[0].right()
+        this.playersEntries[0].right()
       } else {
-        activePlayers[0].halt()
+        this.playersEntries[0].halt()
       }
     }
   }
@@ -172,6 +127,44 @@ export class Breakout extends BaseGame {
     }
   }
 
+  checkForNextGen() {
+    if (this.playersEntries.filter((p) => p.active).length === 0) {
+      this.nextGeneration()
+    }
+  }
+
+  onBallHitBrick(ball: Ball, brick: Brick, player: Player) {
+    brick.kill()
+    this.data.inc('currentScore')
+
+    if (player) {
+      player.network.fitness += 500
+
+      if (
+        this.brickEntries.filter((b) => b.active && b.index === player.index)
+          .length === 0
+      ) {
+        player.network.fitness += 50000
+        player.kill()
+        ball.kill()
+        this.checkForNextGen()
+      }
+    }
+  }
+  onBallHitPlayer(ball: Ball, player: Player) {
+    if (!player.body.touching.up) return
+    if (player) player.network.fitness += 5000
+    const ratio = (player.x - ball.x) / player.body.width + 0.5
+    const range = [0 - CONFIG.bounceRatio, -Math.PI + CONFIG.bounceRatio]
+    const angle = Phaser.Math.Interpolation.Linear(range, ratio)
+    const { x, y } = ball.body.velocity
+    const speed = Math.abs(Math.sqrt(x ** 2 + y ** 2))
+    ball.setVelocity(
+      Math.cos(angle) * speed,
+      Math.min(Math.sin(angle) * speed, -150),
+    )
+  }
+
   nextGeneration() {
     super.nextGeneration()
     this.resetPlayers()
@@ -181,11 +174,7 @@ export class Breakout extends BaseGame {
     super.setupDatGUI(1, 4)
 
     this.gui
-      .add(CONFIG, 'brickSize', 1, 3, 0.5)
-      .onFinishChange(this.reset.bind(this))
-
-    this.gui
-      .add(CONFIG, 'brickBuffer', 10, 50, 10)
+      .add(CONFIG, 'brickSize', 1.5, 3, 0.5)
       .onFinishChange(this.reset.bind(this))
 
     this.gui
@@ -203,11 +192,5 @@ export class Breakout extends BaseGame {
     this.gui
       .add(CONFIG, 'playerSize', 10, 100, 10)
       .onFinishChange(this.reset.bind(this))
-
-    // this.gui
-    //   .add(CONFIG, 'bounceRatio', 200, 3200, 150)
-    //   .onFinishChange(this.reset.bind(this))
   }
 }
-
-const collisionFilter = (a: any, b: any) => a.index === b.index

@@ -10,8 +10,8 @@ export let FLAPPY_CONFIG = {
 
 export let BREAKOUT_CONFIG = {
   brickSize: 2,
-  brickBuffer: 30,
-  playerCount: 150,
+  brickBuffer: 20,
+  playerCount: 100,
   ballSpeed: 400,
   playerSpeed: 500,
   playerSize: 50,
