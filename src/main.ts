@@ -2,6 +2,7 @@ import { Menu } from './scenes/Menu'
 import { Flappy } from './scenes/Flappy'
 import { AUTO, Game, Scale, Types } from 'phaser'
 import { Breakout } from './scenes/Breakout'
+import { Snake } from './scenes/Snake'
 
 //  Find out more information about the Game Config at:
 //  https://newdocs.phaser.io/docs/3.70.0/Phaser.Types.Core.GameConfig
@@ -20,7 +21,7 @@ const config: Types.Core.GameConfig = {
     default: 'arcade',
     // arcade: { debug: true },
   },
-  scene: [Menu, Flappy, Breakout],
+  scene: [Menu, Flappy, Breakout, Snake],
 }
 
 export default new Game(config)

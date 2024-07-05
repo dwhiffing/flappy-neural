@@ -18,6 +18,13 @@ export let BREAKOUT_CONFIG = {
   bounceRatio: 0.5,
 }
 
+export let SNAKE_CONFIG = {
+  tileSize: 16,
+  tileBuffer: 1,
+  tileScale: 1,
+  playerCount: 10,
+}
+
 export const TINTS = [
   0xffffff, 0xf0a3ff, 0x0075dc, 0x993f00, 0x4c005c, 0x005c31, 0x2bce48,
   0xffcc99, 0x94ffb5, 0x8f7c00, 0x9dcc00, 0xc20088, 0x003380, 0xffa405,

@@ -29,10 +29,11 @@ export class Menu extends Scene {
     super('Menu')
   }
   create() {
-    const flappyText = new Text(0, -30, this, 'Flappy Bird', 'Flappy')
-    const breakoutText = new Text(0, 30, this, 'Breakout', 'Breakout')
+    const flappyText = new Text(0, -60, this, 'Flappy Bird', 'Flappy')
+    const breakoutText = new Text(0, 0, this, 'Breakout', 'Breakout')
+    const snakeText = new Text(0, 60, this, 'Snake', 'Snake')
     this.add.existing(flappyText)
     this.add.existing(breakoutText)
-    // this.scene.start('Breakout')
+    this.add.existing(snakeText)
   }
 }
