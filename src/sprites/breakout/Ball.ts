@@ -1,4 +1,6 @@
+import { BREAKOUT_CONFIG as CONFIG } from '../../constants'
 import { Scene } from 'phaser'
+import { TINTS } from '../../constants'
 
 export class Ball extends Phaser.Physics.Arcade.Sprite {
   declare body: Phaser.Physics.Arcade.Body
@@ -8,25 +10,25 @@ export class Ball extends Phaser.Physics.Arcade.Sprite {
     super(scene, x, y, 'brick')
     this.scene.add.existing(this)
     this.scene.physics.add.existing(this)
-    this.setScale(0.5).setBounce(1).setCollideWorldBounds(true)
-    // this.setAlpha(0.5)
+    this.setScale(0.5).setBounce(1).setCollideWorldBounds(true, 1, 1, true)
   }
 
   spawn(index: number) {
     this.index = index
-    this.setVelocity(0, 500).setPosition(
+    this.setVelocity(
+      Phaser.Math.Between(-500, 500),
+      -CONFIG.ballSpeed,
+    ).setPosition(
       this.scene.cameras.main.width / 2,
-      this.scene.cameras.main.height / 2,
+      this.scene.cameras.main.height / 1.2,
     )
-    this.setCollidesWith(index)
+    this.setTint(TINTS[index % TINTS.length])
     this.setActive(true)
     this.setVisible(true)
   }
 
   kill() {
-    this.x = -999
-    this.y = -999
-    this.setVelocityX(0)
+    this.setVelocity(0).setPosition(-999, -999)
     this.setActive(false)
     this.setVisible(false)
   }

@@ -18,7 +18,7 @@ const config: Types.Core.GameConfig = {
   },
   physics: {
     default: 'arcade',
-    arcade: { debug: true },
+    // arcade: { debug: true },
   },
   scene: [Menu, Flappy, Breakout],
 }

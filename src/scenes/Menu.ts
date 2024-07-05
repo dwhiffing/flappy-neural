@@ -33,5 +33,6 @@ export class Menu extends Scene {
     const breakoutText = new Text(0, 30, this, 'Breakout', 'Breakout')
     this.add.existing(flappyText)
     this.add.existing(breakoutText)
+    // this.scene.start('Breakout')
   }
 }

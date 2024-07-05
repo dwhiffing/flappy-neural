@@ -1,3 +1,4 @@
+import { BREAKOUT_CONFIG as CONFIG, TINTS } from '../../constants'
 import { Scene } from 'phaser'
 
 export class Brick extends Phaser.Physics.Arcade.Sprite {
@@ -8,8 +9,8 @@ export class Brick extends Phaser.Physics.Arcade.Sprite {
     super(scene, x, y, 'brick')
     this.scene.add.existing(this)
     this.scene.physics.add.existing(this)
-    this.setScale(2, 1).setOrigin(0).setImmovable(true)
-    // this.setAlpha(0.5)
+    this.setOrigin(0).setImmovable(true)
+    this.setAlpha(0.33)
   }
 
   spawn(index: number, x: number, y: number) {
@@ -17,8 +18,8 @@ export class Brick extends Phaser.Physics.Arcade.Sprite {
     this.x = x
     this.y = y
     this.setActive(true)
-    this.setVisible(true)
-    this.setCollidesWith(index)
+    this.setVisible(true).setScale(2 * CONFIG.brickSize, 1 * CONFIG.brickSize)
+    this.setTint(TINTS[index % TINTS.length])
   }
 
   kill() {

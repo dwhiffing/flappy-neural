@@ -1,4 +1,4 @@
-import { BREAKOUT_CONFIG as CONFIG } from '../../constants'
+import { BREAKOUT_CONFIG as CONFIG, TINTS } from '../../constants'
 import { NeuralNetwork } from '../../neat'
 import { Breakout } from '../../scenes/Breakout'
 
@@ -12,16 +12,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     super(scene, -999, -999, 'player')
     this.scene.add.existing(this)
     this.scene.physics.add.existing(this)
-    this.setScale(5, 1).setImmovable(true).setOrigin(0.5, 1)
-    // this.setAlpha(0.5)
+    this.setImmovable(true).setOrigin(0.5, 1)
   }
 
   spawn = (index: number, network = new NeuralNetwork(5, 1)) => {
     this.network = network
     this.index = index
-    this.setCollidesWith(index)
+    this.setTint(TINTS[index % TINTS.length])
     this.setActive(true)
       .setVisible(true)
+      .setScale(CONFIG.playerSize / 10, 1)
       .setVelocity(0)
       .setPosition(
         this.scene.cameras.main.width / 2,
@@ -37,11 +37,19 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   left() {
-    this.setVelocityX(-CONFIG.playerSpeed)
+    if (this.x > this.body.width / 1.75) {
+      this.setVelocityX(-CONFIG.playerSpeed)
+    } else {
+      this.halt()
+    }
   }
 
   right() {
-    this.setVelocityX(CONFIG.playerSpeed)
+    if (this.x < this.scene.cameras.main.width - this.body.width / 1.75) {
+      this.setVelocityX(CONFIG.playerSpeed)
+    } else {
+      this.halt()
+    }
   }
 
   halt() {
@@ -49,21 +57,28 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   update = () => {
-    // if (this.y > this.scene.cameras.main.height * 1.2 || this.y < -50) {
-    //   this.kill()
-    // }
-    // get more points the closer you are to the center of the pipe gap
-    // const val = Math.abs(
-    //   this.y / this.scene.cameras.main.height -
-    //     (closest[1].y + CONFIG.pipeDistance / 2) /
-    //       this.scene.cameras.main.height,
-    // )
-    // const val = 0
-    // this.network.fitness += Math.max(0, 1 - val * 100)
-    // const inputs = []
-    // const output = this.network.predict(inputs)
-    // if (output[0] > 0.5) {
-    //   this.jump()
-    // }
+    if (!this.active || this.scene.isPlayMode) return
+
+    const cam = this.scene.cameras.main
+    const ball = this.scene.ballEntries.find((b) => b.index === this.index)!
+    const inputs = [
+      this.x / cam.width,
+      ball.x / cam.width,
+      ball.y / cam.height,
+      ball.body.velocity.x / 1000,
+      ball.body.velocity.y / 1000,
+    ]
+    const pl = this.x - this.body.width / 2
+    const pr = this.x + this.body.width / 2
+    const val = ball.x > pl && ball.x < pr ? 1 : 0
+    const val2 = (1 - Math.abs(ball.x / cam.width - this.x / cam.width)) / 100
+
+    this.network.fitness += val2 + val
+    const output = this.network.predict(inputs)
+    if (output[0] < 0.5) {
+      this.left()
+    } else {
+      this.right()
+    }
   }
 }

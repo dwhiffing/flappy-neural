@@ -65,13 +65,15 @@ export class BaseGame extends Scene {
     }
   }
 
-  setupDatGUI() {
+  setupDatGUI(minTimescale = 1, maxTimescale = 15) {
     this.gui = new dat.GUI({ width: 300 })
 
-    this.gui.add(this.time, 'timeScale', 1, 15, 1).onChange((c) => {
-      this.physics.world.timeScale = 1 / c
-      this.time.timeScale = c
-    })
+    this.gui
+      .add(this.time, 'timeScale', minTimescale, maxTimescale, 1)
+      .onChange((c) => {
+        this.physics.world.timeScale = 1 / c
+        this.time.timeScale = c
+      })
 
     this.gui.add(this, 'pause')
     this.gui.add(this, 'isPlayMode').onFinishChange(this.reset.bind(this))
