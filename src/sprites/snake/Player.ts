@@ -42,6 +42,9 @@ export class Player {
 
   kill = () => {
     this.graphics.clear()
+    const food = this.scene.foodEntries.find((f) => f.index == this.index)
+    food?.kill()
+
     this.active = false
   }
 
@@ -168,7 +171,23 @@ export class Player {
     const val = distance / maxDistance
     if (this.scene.isPlayMode) return
 
+    // TODO: need to reward them based on if they are moving toward the food or not instead
+    // ie, if they are left of the food, reward them for moving right
+
+    const isLeft = head[0] < food._x
+    const isAbove = head[1] < food._y
+    const isMovingTowardHoriz = isLeft
+      ? this.direction === 1
+      : this.direction === 3
+    const isMovingTowardVert = isAbove
+      ? this.direction === 2
+      : this.direction === 0
+    const isMovingToward = isMovingTowardHoriz || isMovingTowardVert
+
     this.network.fitness += 1 - val
+
+    if (isMovingToward) this.network.fitness += 10
+
     const output = this.network.predict(inputs)
     if (output[0] < 0.33) {
       this.turnLeft()
